@@ -102,6 +102,9 @@ function unique_id() {
 function httpConnectionHandler(request, response) {
 	var path = url.parse(request.url).pathname;
 
+	response.setHeader("Access-Control-Allow-Origin", "*");
+	response.setHeader("Access-Control-Allow-Headers", "x-requested-with");
+
 	// create PDF
 	if(path == "/") {
 		var postData = "";
@@ -141,18 +144,18 @@ function httpConnectionHandler(request, response) {
 
 				fillPDFForms(pdfObject.inputPdfPath, pdfObject.fdfPath, pdfObject.outputPdfPath, obj.fills, function(success, error_msg) {
 					if(!success) {
-						response.writeHead(404, { "Access-Control-Allow-Origin": "*" });
+						response.statusCode = 404;
 						response.end(error_msg);
 						return;
 					}
 
-					response.writeHead(200, { "Access-Control-Allow-Origin": "*" });
+					response.statusCode = 200;
 					response.end(pdfObject.pathForHTTP);
 				});	
 
 			} catch(e) {
 				console.log("An error occured while processing the post data: " + e);
-				response.writeHead(404, { "Access-Control-Allow-Origin": "*" });
+				response.statusCode = 404;
 				response.end("Error " + e);
 			}
 		});
@@ -169,17 +172,17 @@ function httpConnectionHandler(request, response) {
 				isInQueue = true;
 		
 		if(!isInQueue) {
-			response.writeHead(404, { "Access-Control-Allow-Origin": "*" });
+			response.statusCode = 404;
 			response.end("File does not exists!");
 			return;
 		}
 
 		fs.exists(filepath, function(exists){
 			if(exists) {
-				response.writeHead(200, { "Content-Type": "application/pdf", "Access-Control-Allow-Origin": "*" });
+				response.statusCode = 200;
 				response.end(fs.readFileSync(filepath));
 			} else {
-				response.writeHead(404, { "Access-Control-Allow-Origin": "*" });
+				response.statusCode = 404;
 				response.end("File does not exists!");
 			}
 		});
