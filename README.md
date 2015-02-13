@@ -69,12 +69,12 @@ HTML and JavaScript example using jQuery
 <button id="onOK">button</button>
 
 <script type="text/javascript">
+	// The host and protocol for the PDF server must be adjusted!
 	function loadPDF(url, postData) {
 		jQuery.post(
 			url,
 			postData,
 			function(data) {
-				if(textStatus ==)
 				window.open("http://localhost:8002/" + data);
 			}
 		);
