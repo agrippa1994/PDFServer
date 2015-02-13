@@ -1,0 +1,13 @@
+{
+	"port": 8002,
+	"allowed_pdfs" : [
+		"kaufvertrag.pdf"
+	],
+	"use_https": false,
+
+	// Irrelevant if you aren't using HTTPS
+	"https": {
+		"key": "ssl/key.pem",
+		"cert": "ssl/cert.pem"
+	}
+}
