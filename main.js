@@ -1,9 +1,9 @@
 var fs = require("fs"),
-	fdf = require("fdf"),
 	https = require("https"),
 	http = require("http"),
 	url = require("url"),
-	child_process = require("child_process")
+	unique_id = require("./unique_id.js"),
+	pdffiller = require("./pdffiller.js")
 ;
 
 // Configuration
@@ -16,73 +16,68 @@ var INPUT_DIRECTORY = config["input_dir"] || "input/";
 var OUTPUT_DIRECTORY = config["output_dir"] || "output/";
 var PDF_DIRECTORY = config["pdf_dir"] || "pdfs/";
 
-var PORT = config["port"] || 8002;
+var PORT = config["port"] || null;
 var ALLOWED_PDFS = config["allowed_pdfs"] || [];
 
 var KEY_PEM = null;
 var CERT_PEM = null;
 
 var USE_HTTPS = config["use_https"] || false;
-if(USE_HTTPS) {
-	KEY_PEM = fs.readFileSync(config["https"]["key"]);
-	CERT_PEM = fs.readFileSync(config["https"]["cert"]);
-}
 
-//	PDF files which are held by the webserver
-//	Every object must have following properties:
-//		id 				- Unique id of the object
-//		creationTime	- Time when the object has been created (seconds since 1970)
-//		fdfPath			- Path, where the fdf file is located
-//		inputPdfPath	- Path, where the input pdf (which will be filled) is stored
-//		outputPdfPath	- Path, where the generated pdf is stored
-//		pathForHTTP		- Path, which is for the Request to avoid access to files, which should not be accessed!
-var currentPDFFiles = [{}];
-
-//	Measures the number of seconds since 1970 to now
-function secondsAfter1970() {
-	return Math.round(new Date().getTime() / 1000);
-}
-
-//	Create a unique id
-function unique_id() {
-	if(typeof unique_id.stored_ids === "undefined") {
-		unique_id.stored_ids = [];
+function isConfigurationValid() {
+	if(PORT == null) {
+		console.log("No port has been set in the configuration file!");
+		return false;
 	}
 
-	if(typeof unique_id.generator === "undefined") {
-		unique_id.generator = function(low, high) {
-			return Math.floor(Math.random() * (high - low) + low);
+	if(USE_HTTPS) {
+		var keyPEMPath = config["https"]["key"] || null;
+		var certPEMPath = config["https"]["cert"] || null;
+
+		if(keyPEMPath == null || certPEMPath == null) {
+			console.log("The SSL key or cert certificate isn't set in the configuration file!");
+			console.log("If you don't want to use HTTPS you will have to remove the key \"use_https\" in your configuration or set it to false!");
+			return false;
+		}
+
+		if(!fs.existsSync(keyPEMPath) || !fs.existsSync(certPEMPath)) {
+			console.log("The SSL key or cert certificate can not be opened!");
+			console.log("If you don't want to use HTTPS you will have to remove the key \"use_https\" in your configuration or set it to false!");
+			return false;
+		}
+
+		KEY_PEM = fs.readFileSync(config["https"]["key"]);
+		CERT_PEM = fs.readFileSync(config["https"]["cert"]);
+	}
+
+	if(INPUT_DIRECTORY.slice(-1) != "/" || OUTPUT_DIRECTORY.slice(-1) != "/" || PDF_DIRECTORY.slice(-1) != "/") {
+		console.log("All path information have to end with a trailing slash!");
+		return false;
+	}
+
+	if(PDF_LIFE_TIME <= 0) {
+		console.log("The PDF lifetime must be equal or greater than one second!");
+		return false;
+	}
+
+	if(ALLOWED_PDFS.length == 0) {
+		console.log("No PDF files are allowed to be processed by the server!");
+		return false;
+	}
+
+	for(var i = 0; i < ALLOWED_PDFS.length; i++) {
+		if(!fs.existsSync(PDF_DIRECTORY + ALLOWED_PDFS[i])) {
+			console.log("The allowed PDF " + ALLOWED_PDFS[i] + " can not be found in the PDF directory!");
+			return false;
 		}
 	}
 
-	if(typeof unique_id.generate_string === "undefined") {
-		unique_id.generate_string = function() {
-			var str = "";
-			for(var i = 0; i < 16; i++) 
-				str += String.fromCharCode(unique_id.generator(0x61, 0x7A));
-
-			return str;
-		}
-	}
-
-	if(typeof unique_id.generate_unique_string === "undefined") {
-		unique_id.generate_unique_string = function() {
-			while(true) {
-				var str = unique_id.generate_string();
-				var found = false;
-
-				for(var i = 0; i < unique_id.stored_ids; i++)
-					if(str == unique_id.stored_ids[i])
-						found = true;
-
-				if(!found)
-					return str;
-			}
-		}
-	}
-
-	return unique_id.generate_unique_string();
+	return true;
 }
+
+// Exit the process if the configuration is invalid
+if(!isConfigurationValid())
+	process.exit(0);
 
 //	Delete all files in the input and output directory at startup
 (function() {
@@ -99,6 +94,21 @@ function unique_id() {
 	});
 })();
 
+
+//	PDF files which are held by the webserver
+//	Every object must have following properties:
+//		id 				- Unique id of the object
+//		creationTime	- Time when the object has been created (seconds since 1970)
+//		fdfPath			- Path, where the fdf file is located
+//		inputPdfPath	- Path, where the input pdf (which will be filled) is stored
+//		outputPdfPath	- Path, where the generated pdf is stored
+//		pathForHTTP		- Path, which is for the Request to avoid access to files, which should not be accessed!
+var currentPDFFiles = [{}];
+
+//	Measures the number of seconds since 1970 to now
+function secondsAfter1970() {
+	return Math.round(new Date().getTime() / 1000);
+}
 
 //	Start the HTTP or the HTTPS server (depends on the configuration)
 (function(){
@@ -136,7 +146,7 @@ function unique_id() {
 			currentPDFFiles.push(pdfObject);
 
 			//	Fill the PDF
-			fillPDFForms(pdfObject.inputPdfPath, pdfObject.fdfPath, pdfObject.outputPdfPath, obj.fills, function(success, error_msg) {
+			pdffiller(pdfObject.inputPdfPath, pdfObject.fdfPath, pdfObject.outputPdfPath, obj.fills, function(success, error_msg) {
 				if(!success)
 					return response.end(error_msg);
 
@@ -228,26 +238,3 @@ function unique_id() {
 })();
 
 
-function fillPDFForms(sourceFile, fdfDestination, destinationFile, fieldValues, callback) {
-	//	Create the FDF file for pdftk
-	try {
-		if(!fdf.createFDF(fdfDestination, fieldValues))
-			return callback(false, "Can't create FDF file!");
-	}
-	catch(e) {
-		return callback(false, e);
-	}
-
-	//	Execute pdftk with the given parameters
-	child_process.exec("pdftk " + sourceFile + " fill_form " + fdfDestination + " output " + destinationFile + " flatten", function (error, stdout, stderr) {
-		if (error !== null)
-			return callback(false, "exec error " + error);
-
-		fs.unlink(fdfDestination, function(err) {
-			if (err) 
-				return callback(false, "unlink error " + err);
-
-			callback(true, "No error");
-		});
-	});
-}

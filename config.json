@@ -1,16 +1,12 @@
 {
 	"port": 8002,
 	"allowed_pdfs" : [
-		"kaufvertrag.pdf"
+		"Fillable_PDF_Sample_from_TheWebJockeys_vC5.pdf"
 	],
+
 	"use_https": false,
 
-	"https": {
-		"key": "ssl/key.pem",
-		"cert": "ssl/cert.pem"
-	},
-
-	"pdf_lifetime": 10,
+	"pdf_lifetime": 5,
 	"input_dir": "input/",
 	"output_dir": "output/",
 	"pdf_dir": "pdfs/"
