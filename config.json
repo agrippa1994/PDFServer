@@ -5,9 +5,13 @@
 	],
 	"use_https": false,
 
-	// Irrelevant if you aren't using HTTPS
 	"https": {
 		"key": "ssl/key.pem",
 		"cert": "ssl/cert.pem"
-	}
+	},
+
+	"pdf_lifetime": 10,
+	"input_dir": "input/",
+	"output_dir": "output/",
+	"pdf_dir": "pdfs/"
 }
