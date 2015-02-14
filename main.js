@@ -132,7 +132,7 @@ function secondsAfter1970() {
 			if(!isAllowedPDF)
 				throw "PDF is not allowed";
 
-			var id = unique_id();
+			var id = unique_id.generate();
 			var pdfObject = {
 				id: 			id,
 				creationTime: 	secondsAfter1970(),
@@ -230,6 +230,7 @@ function secondsAfter1970() {
 
 			if((pdfFile.creationTime + PDF_LIFE_TIME) < secondsAfter1970()) {
 				fs.unlink(pdfFile.outputPdfPath, function(error) { });
+				unique_id.free(pdfFile.id);
 				currentPDFFiles.splice(i, 1);
 				i--;
 			}
