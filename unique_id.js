@@ -13,7 +13,7 @@ unique_id.generator = function(low, high) {
 unique_id.generate_string = function() {
 	var str = "";
 	for(var i = 0; i < 32; i++) {
-		switch(unique_id.generator(0,2)){
+		switch(unique_id.generator(0,2)) {
 		case 0: //	ASCII 0 - 9
 			str += String.fromCharCode(unique_id.generator(0x30, 0x39));
 			break;

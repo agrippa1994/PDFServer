@@ -1,7 +1,7 @@
 {
 	"port": 8002,
 	"allowed_pdfs" : [
-		"Fillable_PDF_Sample_from_TheWebJockeys_vC5.pdf", "kaufvertrag.pdf"
+		"Fillable_PDF_Sample_from_TheWebJockeys_vC5.pdf"
 	],
 
 	"use_https": false,

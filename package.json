@@ -1,0 +1,16 @@
+{
+    "name": "PDFServer",
+    "description": "PDF server for filling PDF files",
+    "version": "1.0.0",
+    "repository": {
+		"type": "git",
+		"url": "https://github.com/agrippa1994/PDFServer"
+	},
+    "dependencies": {
+        "fdf": "agrippa1994/nodejs-fdf"
+    },
+
+    "scripts": {
+    	"start": "node main.js"
+    }
+}

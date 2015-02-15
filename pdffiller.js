@@ -14,7 +14,7 @@ module.exports = function(sourceFile, fdfDestination, destinationFile, fieldValu
 	}
 
 	//	Execute pdftk with the given parameters
-	child_process.exec("pdftk " + sourceFile + " fill_form " + fdfDestination + " output " + destinationFile + " flatten", function (error, stdout, stderr) {
+	child_process.exec("pdftk " + sourceFile + " fill_form " + fdfDestination + " output " + destinationFile, function (error, stdout, stderr) {
 		if (error !== null)
 			return callback(false, "exec error " + error);
 
